@@ -4,6 +4,6 @@ resource "aws_vpc" "demovpc" {
   instance_tenancy = "default"
 
   tags = {
-    Name = "CloudQuickLabs-VPC"
+    Name = "Demo-VPC"
   }
 }

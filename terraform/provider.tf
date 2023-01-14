@@ -8,7 +8,7 @@ terraform {
   backend "http" {} 
 }
 
-# AWS Configure
+# Configure and downloading plugins for aws
 provider "aws" {
-  region                  = "${var.aws_region}"
+  region     = "${var.aws_region}"
 }
