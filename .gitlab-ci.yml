@@ -7,7 +7,7 @@ workflow:
 
 variables:
   TF_DIR: ${CI_PROJECT_DIR}/terraform
-  STATE_NAME: "aws_tf_state"
+  STATE_NAME: "clodquicklabs-tf"
   ADDRESS: "https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/terraform/state/${STATE_NAME}"
 
 stages:
@@ -24,7 +24,7 @@ before_script:
   - terraform --version
   - export GITLAB_ACCESS_TOKEN=$TOKEN
   - cd ${TF_DIR}
-  - terraform init  -reconfigure -backend-config="address=${ADDRESS}" -backend-config="lock_address=${ADDRESS}/lock" -backend-config="unlock_address=${ADDRESS}/lock" -backend-config="username=yashhirulkar701" -backend-config="password=$GITLAB_ACCESS_TOKEN" -backend-config="lock_method=POST" -backend-config="unlock_method=DELETE" -backend-config="retry_wait_min=5"
+  - terraform init  -reconfigure -backend-config="address=${ADDRESS}" -backend-config="lock_address=${ADDRESS}/lock" -backend-config="unlock_address=${ADDRESS}/lock" -backend-config="username=RekhuGopal" -backend-config="password=$GITLAB_ACCESS_TOKEN" -backend-config="lock_method=POST" -backend-config="unlock_method=DELETE" -backend-config="retry_wait_min=5"
 
 validate:
   stage: validate
