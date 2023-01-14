@@ -1,76 +1,54 @@
----
-workflow:
-    rules:
-      - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != "merge_request_event"
-        when: never
-      - when: always
-
+image: registry.gitlab.com/gitlab-org/terraform-images/stable:latest
 variables:
-  TF_DIR: ${CI_PROJECT_DIR}/terraform
-  STATE_NAME: "aws_tf_state"
-  ADDRESS: "https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/terraform/state/${STATE_NAME}"
-
-stages:
-  - validate
-  - plan
-  - apply
-  - destroy
-
-image:
-  name: hashicorp/terraform:light
-  entrypoint: [""]
-
+  TF_ROOT: ${CI_PROJECT_DIR}/
+  TF_ADDRESS: ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/clodquicklabs-tf"
+cache:
+  key: example-production
+  paths:
+    - ${TF_ROOT}/.terraform
 before_script:
-  - terraform --version
-  - export GITLAB_ACCESS_TOKEN=$TOKEN
-  - cd ${TF_DIR}
-  - terraform init  -reconfigure -backend-config="address=${ADDRESS}" -backend-config="lock_address=${ADDRESS}/lock" -backend-config="unlock_address=${ADDRESS}/lock" -backend-config="username=RekhuGopal" -backend-config="password=$GITLAB_ACCESS_TOKEN" -backend-config="lock_method=POST" -backend-config="unlock_method=DELETE" -backend-config="retry_wait_min=5"
-
+  - cd ${TF_ROOT}
+stages:
+  - prepare
+  - validate
+  - build
+  - deploy
+init:
+  stage: prepare
+  script:
+    - gitlab-terraform init
 validate:
   stage: validate
+  variables: 
+        TF_VAR_ACCESS_ID: ${AWS_ACCESS_KEY_ID}
+        TF_VAR_SECRET_KEY: ${AWS_SECRET_ACCESS_KEY}
   script:
-    - terraform validate
-  cache:
-    key: ${CI_COMMIT_REF_NAME}
-    paths:
-    - ${TF_DIR}/.terraform
-    policy: pull-push
-
+    - gitlab-terraform validate
 plan:
-  stage: plan
+  stage: build
+  variables: 
+        TF_VAR_ACCESS_ID: ${AWS_ACCESS_KEY_ID}
+        TF_VAR_SECRET_KEY: ${AWS_SECRET_ACCESS_KEY}
   script:
-    - terraform plan 
-  dependencies:
-    - validate
-  cache:
-    key: ${CI_COMMIT_REF_NAME}
+    - gitlab-terraform plan
+    - gitlab-terraform plan-json
+  artifacts:
+    name: plan
     paths:
-    - ${TF_DIR}/.terraform
-    policy: pull
-
-
+      - ${TF_ROOT}/plan.cache
+    reports:
+      terraform: ${TF_ROOT}/plan.json
 apply:
-  stage: apply
+  stage: deploy
+  variables: 
+        TF_VAR_ACCESS_ID: ${AWS_ACCESS_KEY_ID}
+        TF_VAR_SECRET_KEY: ${AWS_SECRET_ACCESS_KEY}
+  environment:
+    name: production
   script:
-    - terraform apply  -auto-approve
+    - gitlab-terraform apply
   dependencies:
     - plan
-  cache:
-    key: ${CI_COMMIT_REF_NAME}
-    paths:
-    - ${TF_DIR}/.terraform
-    policy: pull
-
-destroy:
-  stage: destroy
-  script:
-    - terraform destroy  -auto-approve
-  dependencies:
-    - plan
-    - apply
-  cache:
-    key: ${CI_COMMIT_REF_NAME}
-    paths:
-    - ${TF_DIR}/.terraform
-    policy: pull
   when: manual
+  only:
+    - main
